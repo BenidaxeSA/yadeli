@@ -1,0 +1,82 @@
+DOCUMENT DE CONCEPTION : PROJET YADELI
+I. RÉSUMÉ DU PROJET
+Nom officiel : Yadeli
+
+Concept : Plateforme de mise en relation pour le transport de personnes et la livraison sécurisée de colis.
+
+Marché cible : Brazzaville (Congo).
+
+Identité : Une application fiable, rapide et adaptée aux réalités locales (paiements mobiles et cartographie précise).
+
+Stack technique : Flutter (Frontend) & Mapbox (Cartographie).
+
+II. VISION ET OBJECTIFS
+Yadeli vise à devenir l'outil de référence pour la mobilité urbaine à Brazzaville.
+
+Accessibilité : Faciliter la commande d'une course pour tous.
+
+Fiabilité : Garantir que chaque colis arrive à bon port grâce à des preuves de livraison.
+
+Technologie : Utiliser la puissance de Mapbox pour naviguer efficacement dans les quartiers.
+
+III. CAHIER DES CHARGES FONCTIONNEL (PRD)
+1. Espace Utilisateur (Client)
+Onboarding : Inscription rapide via numéro de téléphone avec validation OTP.
+
+Carte Interactive (Mapbox) : Détection automatique de la position et affichage des prestataires disponibles autour.
+
+Processus de Commande : * Saisie de la destination avec suggestion de lieux.
+
+Choix du service : Yadeli Moto, Yadeli Auto, ou Yadeli Livraison.
+
+Estimation transparente du prix avant validation.
+
+Suivi en temps réel : Visualisation du trajet du chauffeur sur la carte Mapbox.
+
+Historique : Accès aux anciens trajets et récapitulatif des factures.
+
+2. Espace Prestataire (Chauffeur/Livreur)
+Tableau de bord : Vue simplifiée des gains et du nombre de courses effectuées.
+
+Gestion des courses : Système de notifications prioritaires pour accepter ou refuser une mission.
+
+Navigation : Itinéraire optimisé via le moteur de calcul Mapbox Directions.
+
+IV. SPÉCIFICITÉS DE LA LIVRAISON DE COLIS
+La livraison est un axe majeur de Yadeli. Elle inclut :
+
+Description du colis : Taille, poids approximatif et niveau de fragilité.
+
+Sécurité de livraison :
+
+Code PIN de sécurité : Le destinataire doit valider la réception via un code unique.
+
+Preuve visuelle : Le livreur prend une photo du colis lors de la remise pour clôturer la commande.
+
+Multi-destinations : Possibilité d'ajouter des arrêts pour les livraisons groupées.
+
+V. SPÉCIFICATIONS TECHNIQUES & DÉVELOPPEMENT
+Cartographie avec Mapbox
+Le choix de Mapbox permet une personnalisation totale :
+
+Styles de carte : Design épuré "Yadeli" pour une lecture rapide des noms de rues.
+
+Mise en cache : Optimisation pour fonctionner même lors des baisses de réseau mobile.
+
+Géocodage : Précision accrue sur les points d'intérêt locaux de Brazzaville.
+
+Plan de Développement (Roadmap)
+Semaines 1-2 : Finalisation de l'UI (Login, Profil Yadeli, Menus) et configuration SDK.
+
+Semaines 3-4 : Intégration Mapbox, gestion des permissions GPS et calcul des itinéraires.
+
+Semaines 5-6 : Logique de commande (Backend/Firebase) et notifications push.
+
+Semaines 7-8+ : Intégration des paiements (Airtel/MTN) et tests de sécurité des livraisons.
+
+VI. NOTES POUR LE COLLABORATEUR
+Namespace : L'identifiant technique actuel est com.example.gamestore (à migrer vers com.example.yadeli ultérieurement si nécessaire pour la publication).
+
+Code Source : Les écrans de profil et la carte de base sont déjà initialisés.
+
+Objectif UX : On veut une fluidité totale. L'utilisateur ne doit pas attendre plus de 2 secondes pour obtenir une estimation de prix.
