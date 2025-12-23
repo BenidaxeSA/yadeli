@@ -1,0 +1,31 @@
+{
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  "deno.importMap": "supabase/functions/import_map.json",
+  "deno.lint": true,
+  "deno.unstable": [
+    "bare-node-builtins",
+    "byonm",
+    "sloppy-imports",
+    "unsafe-proto",
+    "webgpu",
+    "broadcast-channel",
+    "worker-options",
+    "cron",
+    "kv",
+    "ffi",
+    "fs",
+    "http",
+    "net"
+  ],
+  "imports": {
+    "std/server": "https://deno.land/std@0.177.0/http/server.ts",
+    "supabase": "https://esm.sh/@supabase/supabase-js@2.7.1"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  
+  
+}
