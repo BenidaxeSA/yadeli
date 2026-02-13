@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-// import 'package:supabase_flutter/supabase_flutter.dart'; // Commenté pour le Mode Test
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'map_order_screen.dart';
+import '../services/user_service.dart';
+import '../widgets/congo_flag.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -12,26 +14,96 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   bool _isSignUp = false;
   bool _isLoading = false;
+  String _selectedGender = 'homme';
+  final List<String> _selectedLanguages = ['FR'];
 
-  // 🔹 FONCTION DE CONNEXION (MODE TEST)
+  static const _availableLanguages = ['FR', 'EN', 'Lingala', 'Kituba'];
+
+  Future<void> _saveUserProfile({required String name, required String phone, String? email}) async {
+    await UserService.saveUser(
+      name: name,
+      phone: phone,
+      gender: _selectedGender,
+      email: email,
+      languages: _selectedLanguages,
+    );
+  }
+
   Future<void> _handleAuth() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar("Email et mot de passe requis", Colors.red);
+      return;
+    }
+
     setState(() => _isLoading = true);
 
-    // Simulation d'un délai réseau pour l'UX
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final supabase = Supabase.instance.client;
 
-    if (mounted) {
-      setState(() => _isLoading = false);
+      if (_isSignUp) {
+        // Création de compte — enregistrement dans Supabase
+        final res = await supabase.auth.signUp(email: email, password: password);
+        if (res.user == null) {
+          if (mounted) _showSnackBar("Erreur lors de la création du compte", Colors.red);
+          return;
+        }
+        final phone = _phoneController.text.trim().replaceAll(RegExp(r'\s'), '');
+        final validPhone = phone.isNotEmpty ? (phone.startsWith('+') ? phone : '+242 $phone') : '+242 06 444 22 11';
+        await _saveUserProfile(
+          name: _nameController.text.isNotEmpty ? _nameController.text : 'Utilisateur Yadeli',
+          phone: validPhone,
+          email: email,
+        );
+        if (mounted) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MapOrderScreen()));
+          _showSnackBar("Compte créé avec succès. Bienvenue !", Colors.green);
+        }
+      } else {
+        // Connexion — uniquement si le compte existe déjà
+        await supabase.auth.signInWithPassword(email: email, password: password);
+        if (mounted) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MapOrderScreen()));
+          _showSnackBar("Connexion réussie", Colors.green);
+        }
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        if (e.message.contains('Invalid login credentials') || e.message.contains('invalid_credentials')) {
+          _showSnackBar("Compte inexistant. Créez un compte pour continuer.", Colors.orange);
+          setState(() => _isSignUp = true);
+        } else {
+          _showSnackBar(e.message, Colors.red);
+        }
+      }
+    } catch (e) {
+      if (mounted) _showSnackBar("Erreur: ${e.toString().split('\n').first}", Colors.red);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
-      // 🚀 REDIRECTION VERS LA CARTE
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MapOrderScreen()),
-      );
-
-      _showSnackBar("Connexion réussie (Mode Test)", Colors.green);
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(OAuthProvider.google);
+      // OAuth ouvre le navigateur. Au retour, onAuthStateChange met à jour la session.
+      // Le StreamBuilder dans AuthRedirect affichera MapOrderScreen automatiquement.
+      if (mounted) {
+        _showSnackBar("Complétez la connexion dans le navigateur", Colors.green);
+      }
+    } on AuthException catch (e) {
+      if (mounted) _showSnackBar(e.message, Colors.red);
+    } catch (e) {
+      if (mounted) _showSnackBar("Google : configurez le fournisseur dans Supabase (Authentication > Providers)", Colors.orange);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -70,7 +142,14 @@ class _AuthScreenState extends State<AuthScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.local_taxi, size: 70, color: Colors.white),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.local_taxi, size: 70, color: Colors.white),
+                      const SizedBox(width: 16),
+                      CongoFlag(width: 48, height: 32),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   const Text(
                     "YADELI",
@@ -106,23 +185,19 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   const SizedBox(height: 25),
                   
-                  // Champ Email
-                  _buildTextField(
-                    _emailController, 
-                    "Email", 
-                    Icons.email_outlined, 
-                    false
-                  ),
+                  if (_isSignUp) ...[
+                    _buildTextField(_nameController, "Nom complet", Icons.person_outline, false),
+                    const SizedBox(height: 15),
+                    _buildTextField(_phoneController, "Téléphone (ex: 06 444 22 11)", Icons.phone, false, keyboardType: TextInputType.phone),
+                    const SizedBox(height: 15),
+                    _buildGenderSelector(),
+                    const SizedBox(height: 15),
+                    _buildLanguagesSelector(),
+                    const SizedBox(height: 15),
+                  ],
+                  _buildTextField(_emailController, "Email", Icons.email_outlined, false),
                   const SizedBox(height: 15),
-                  
-                  // Champ Mot de passe
-                  _buildTextField(
-                    _passwordController, 
-                    "Mot de passe", 
-                    Icons.lock_outline, 
-                    true
-                  ),
-                  
+                  _buildTextField(_passwordController, "Mot de passe", Icons.lock_outline, true),
                   const SizedBox(height: 30),
 
                   // 🔹 BOUTON PRINCIPAL YADELI
@@ -148,6 +223,24 @@ class _AuthScreenState extends State<AuthScreen> {
                               fontSize: 16
                             ),
                           ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 🔹 CONNEXION AVEC GOOGLE
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _handleGoogleSignIn,
+                      icon: Image.network('https://www.google.com/favicon.ico', width: 20, height: 20, errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 24)),
+                      label: const Text("Créer un compte avec Google"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey[800],
+                        side: BorderSide(color: Colors.grey[400]!),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
                     ),
                   ),
 
@@ -185,16 +278,81 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  // 🔹 WIDGET RÉUTILISABLE POUR LES CHAMPS DE TEXTE
+  Widget _buildLanguagesSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Langues parlées (pour le support)", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _availableLanguages.map((lang) {
+            final selected = _selectedLanguages.contains(lang);
+            return FilterChip(
+              label: Text(lang),
+              selected: selected,
+              onSelected: (v) {
+                setState(() {
+                  if (v) {
+                    _selectedLanguages.add(lang);
+                  } else {
+                    _selectedLanguages.remove(lang);
+                  }
+                  if (_selectedLanguages.isEmpty) _selectedLanguages.add('FR');
+                });
+              },
+              selectedColor: Colors.green[100],
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGenderSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Genre", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: RadioListTile<String>(
+                title: const Text("Homme"),
+                value: 'homme',
+                groupValue: _selectedGender,
+                onChanged: (v) => setState(() => _selectedGender = v!),
+                activeColor: Colors.green[700],
+              ),
+            ),
+            Expanded(
+              child: RadioListTile<String>(
+                title: const Text("Femme"),
+                value: 'femme',
+                groupValue: _selectedGender,
+                onChanged: (v) => setState(() => _selectedGender = v!),
+                activeColor: Colors.green[700],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildTextField(
-      TextEditingController controller, 
-      String label, 
-      IconData icon, 
-      bool isPassword
-  ) {
+    TextEditingController controller,
+    String label,
+    IconData icon,
+    bool isPassword, {
+    TextInputType? keyboardType,
+  }) {
     return TextField(
       controller: controller,
       obscureText: isPassword,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: Colors.green.shade700),

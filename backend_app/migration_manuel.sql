@@ -1,4 +1,10 @@
--- Table des commandes Yadeli (format compatible avec l'app Flutter)
+-- À exécuter dans Supabase Dashboard > SQL Editor > New Query
+-- Projet : https://bhcgojcoonmapqiwqsz.supabase.co
+
+-- 1. Extension UUID
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 2. Table des commandes
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   client_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -10,14 +16,14 @@ CREATE TABLE IF NOT EXISTS public.orders (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index pour les requêtes par client
+-- 3. Index
 CREATE INDEX IF NOT EXISTS idx_orders_client_id ON public.orders(client_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
 
--- RLS activé (les Edge Functions utilisent le service_role qui bypass)
+-- 4. RLS
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
--- Politique : les utilisateurs peuvent voir leurs propres commandes
+DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
 CREATE POLICY "Users can view own orders"
   ON public.orders FOR SELECT
   USING (auth.uid() = client_id);
